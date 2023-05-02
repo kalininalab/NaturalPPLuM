@@ -1,6 +1,6 @@
 # What does the biosynthetic gene cluster say? Understanding biosynthetic gene clusters with protein language models
 
-![Full-size version of the associated poster](https://github.com/latticetower/pLM_BGC/blob/poster.png)
+![Full-size version of the associated poster](https://github.com/latticetower/pLM_BGC/blob/main/poster.png)
 
 This work is super early-stage. At some point code and all other materials will appear in this repo.
 
