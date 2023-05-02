@@ -4,4 +4,4 @@
 
 This work is super early-stage. At some point code and all other materials will appear in this repo.
 
-Currently this repository contains just additional plots and the most recent version of the accosiated poster.
+Currently this repository contains just additional plots and the most recent version of the associated poster.
