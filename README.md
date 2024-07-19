@@ -8,7 +8,7 @@ Standalone training notebooks are available at `from_colab` folder.
 
 ## Citation
 
-Please cite the following preprint:
+Please cite the following [preprint](https://openreview.net/forum?id=UguakxTKG5):
 
 ```
 @inproceedings{
