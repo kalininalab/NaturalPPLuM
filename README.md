@@ -1,8 +1,12 @@
 # What does the biosynthetic gene cluster say? Understanding biosynthetic gene clusters with protein language models
 
-The repository will be updated over the next few weeks - stay tuned!
+The repository is currently being updated - stay tuned!
 
-Currently this repository contains just additional plots and some (outdated: last december I found a bug and fixed it) version of the associated poster.
+Full-size version of the most recent associated poster:
+
+![poster](https://github.com/kalininalab/NaturalPPLuM/blob/main/poster/ICML2024.png)
+
+Standalone training notebooks are available at `from_colab` folder.
 
 ## Citation
 
