@@ -2,9 +2,7 @@
 
 The repository is currently being updated - stay tuned!
 
-Full-size version of the most recent associated poster:
-
-![poster](https://github.com/kalininalab/NaturalPPLuM/blob/main/poster/ICML2024.png)
+The full-size version of the most recent associated poster is available [here](https://github.com/kalininalab/NaturalPPLuM/blob/main/poster/ICML2024.png)
 
 Standalone training notebooks are available at `from_colab` folder.
 
