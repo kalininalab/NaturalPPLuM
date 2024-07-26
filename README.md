@@ -1,5 +1,7 @@
 # Exploring sequence landscape of biosynthetic gene clusters with protein language models
 
+![Repo picture](https://github.com/kalininalab/NaturalPPLuM/blob/main/minipic.png)
+
 The full-size version of the most recent associated poster is available [here](https://github.com/kalininalab/NaturalPPLuM/blob/main/poster/ICML2024.png)
 
 Standalone training notebooks are available at `from_colab` folder.
