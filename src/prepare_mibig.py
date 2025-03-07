@@ -73,14 +73,14 @@ def record2list(record):
     return qualifiers_list    
 
 
-def extract_domain_information(mibig_dir: Path, savedir="preprocessed_features", force=False):
+def extract_domain_information(mibig_dir: Path, savedir="preprocessed_features", force=False) -> Path:
     if not mibig_dir.exists():
         return
     version = mibig_dir.name.split("_")[1]
     gbk_dir = mibig_dir / f"mibig_gbk_{version}"
     gbk_files = list(gbk_dir.glob("*.gbk"))
     
-    features_dir = mibig_dir / "preprocessed_features"
+    features_dir = mibig_dir / savedir
     if features_dir.exists() and not force:
         return
     features_dir.mkdir(exist_ok=True)
@@ -94,14 +94,35 @@ def extract_domain_information(mibig_dir: Path, savedir="preprocessed_features",
             df = pd.DataFrame(qualifiers_list)
             df.to_csv(savepath, index=None)
             # break
-        # break
-        
-        
+    return features_dir
+
+
+def collect_domain_information(domain_info_dir: Path, savepath: Path):
+    # selected_columns = ['aSDomain', 'locus_tag', 'translation']
+    domain_data = []
+    for feature_path in domain_info_dir.glob('*.csv'):
+        try:
+            accession = feature_path.stem
+            df = pd.read_csv(feature_path)
+            # domain_names[accession] = df.aSDomain.values
+            # selected_columns = df.columns
+            # df = df.loc[:, selected_columns]
+            df['accession'] = accession
+            domain_data.extend(df.to_dict('records'))
+        except:
+            # print(accession)
+            continue
+    collected_df = pd.DataFrame(domain_data)  # [['accession'] + selected_columns]
+    collected_df.to_csv(savepath, index=False)
+
+
 if __name__ == "__main__":
     data_dir = Path("../data")
     data_dir.mkdir(exist_ok=True)
     print("Download data...")
     mibig_dir = download_mibig(version="4.0", base_dir=data_dir)
     print('Start domain info extraction...')
-    extract_domain_information(mibig_dir)
+    features_dir = extract_domain_information(mibig_dir)
+    if features_dir is not None:
+        collect_domain_information(features_dir, mibig_dir / "gbk_domain_info.csv")
     print("Everything finished")
