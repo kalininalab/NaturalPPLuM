@@ -1,11 +1,11 @@
 import urllib.request
 import shutil
 import pandas as pd
-from Bio import GenBank
 from collections import defaultdict
-import sys
+from Bio import GenBank
 from pathlib import Path
-
+import click
+import json
 
 
 def download_mibig(version: str = "4.0", base_dir: Path = Path('.')):
@@ -41,6 +41,73 @@ def download_mibig(version: str = "4.0", base_dir: Path = Path('.')):
         )
     return DATADIR
 
+
+def read_json(json_path):
+    with open(json_path) as f:
+        data = json.load(f)
+    return data
+
+
+def collect_json_info(datadir, version="4.0"):
+    all_data = []
+    json_files = sorted(datadir.glob(f"mibig_json_{version}/*.json"))
+    for json_file in json_files:
+        bgc_data = read_json(json_file)
+        all_data.append(bgc_data)
+    return all_data
+
+
+def extract_compound_activity_info(all_data):
+    all_info = []
+    for bgc_data in all_data:
+        accession = bgc_data['accession']
+        # print(list(bgc_data))
+        compounds_info = bgc_data['compounds']
+        for info in compounds_info:
+            # print(list(info))
+            bioactivities = info.get('bioactivities', [])
+            for activity in bioactivities:
+                # print(activity)
+                if isinstance(activity['name'], dict):
+                    # print(activity['name'])
+                    activity['name'] = activity['name']['activity']
+                sel_columns = "name	observed	references".split()
+                activity = {col: activity.get(col) for col in sel_columns if col in activity}
+
+
+                for column in ['name', 'evidence', 'classes', 'structure', 'cyclic', 'synonyms', 'moieties']:
+                    activity[f"compound_{column}"] = info.get(column)
+                activity['accession'] = accession
+                # activity['compound_name'] = compound_name
+                all_info.append(activity)
+            # info['accession'] = accession
+        # all_info.append(info)
+        # print(compound_info)
+    return all_info
+
+
+def extract_taxonomy_info(all_data):
+    all_info = []
+    for bgc_data in all_data:
+        accession = bgc_data['accession']
+        tax_info = bgc_data['taxonomy']
+        tax_info['accession'] = accession
+        # todo: add taxonomy extention
+        all_info.append(tax_info)
+    return all_info
+
+
+def extract_biosyn_class_info(all_data):
+    all_info = []
+    for bgc_data in all_data:
+        accession = bgc_data['accession']
+        biosyn_info = bgc_data['biosynthesis']
+        biosyn_classes = biosyn_info['classes']
+        for info in biosyn_classes:
+            info = {k: info[k] for k in "class	subclass".split() if k in info}
+            info['accession'] = accession
+            all_info.append(info)
+    return all_info
 
 
 def read_genbank_file(filepath):
@@ -116,13 +183,73 @@ def collect_domain_information(domain_info_dir: Path, savepath: Path):
     collected_df.to_csv(savepath, index=False)
 
 
-if __name__ == "__main__":
-    data_dir = Path("../data")
+def read_fasta_iter(path):
+    desc, sequences = '', []
+    with open(path) as f:
+        for line in f:
+            line = line.strip()
+            if line.startswith(">"):
+                if len(sequences) > 0:
+                    yield desc, "".join(sequences)
+                    sequences = []
+                desc = line[1:]
+            else:
+                sequences.append(line)
+        if len(sequences) > 0:
+            yield desc, "".join(sequences)
+
+
+def extract_protein_seqs(path):
+    all_data = []
+    for desc, seq in read_fasta_iter(path):
+        data = desc.split('|')
+        accession = data[0].split('.')[0]
+        position = data[2]
+        direction = data[3]
+        name = data[5]
+        all_data.append({
+            'accession': accession, 
+            'position': position,
+            'direction': direction,
+            'name': name,
+            'sequence': seq
+        })
+    return all_data
+
+
+@click.command()
+@click.option('--datadir', default='data', help='Path to the directory where the data should be saved')
+@click.option('--version', default='4.0', help='Version of mibig dataset to be saved')
+def main(datadir, version):
+    data_dir = Path(datadir)
     data_dir.mkdir(exist_ok=True)
-    print("Download data...")
-    mibig_dir = download_mibig(version="4.0", base_dir=data_dir)
+    print(f"Download data to {repr(str(data_dir))}...")
+    mibig_dir = download_mibig(version=version, base_dir=data_dir)
+    all_data = collect_json_info(mibig_dir, version=version)
+    df = pd.DataFrame(all_data)
+    # print(list(df['compounds']))
+    df.to_csv(mibig_dir / "annotation.csv", index=None)
+    print('Extract taxonomy info...')
+    taxonomy_data = extract_taxonomy_info(all_data)
+    pd.DataFrame(taxonomy_data).to_csv(mibig_dir / 'taxonomy_info.csv', index=None)
+
+    print('Extract biosynthetic classes info...')
+    biosyn_class_info = extract_biosyn_class_info(all_data)
+    pd.DataFrame(biosyn_class_info).to_csv(mibig_dir / 'biosyn_classes.csv', index=None)
+
+    print('Start bgc info extraction...')
+    activity_data = extract_compound_activity_info(all_data)
+    pd.DataFrame(activity_data).to_csv(mibig_dir / "compound_activity_info.csv", index=None)
     print('Start domain info extraction...')
     features_dir = extract_domain_information(mibig_dir)
     if features_dir is not None:
         collect_domain_information(features_dir, mibig_dir / "gbk_domain_info.csv")
+    print('Start protein sequences extraction...')
+    all_data = extract_protein_seqs(mibig_dir / "mibig_prot_seqs.fasta")
+    pd.DataFrame(all_data).to_csv(mibig_dir / "protein_sequences.csv", index=None)
     print("Everything finished")
+
+
+
+if __name__ == "__main__":
+    main()
